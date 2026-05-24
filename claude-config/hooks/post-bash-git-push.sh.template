@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Hook: PostToolUse / Bash - reminder fires ONLY on `git ... push`
+#
+# Catches `git push`, `git -C /path push`, `git -c key=val push`,
+# multi-line scripts that end in push, and semicolon-chained
+# `git add . ; git push`. Does NOT match `git log | grep push`.
+#
+# CUSTOMIZE: edit the reminder text below to remind YOURSELF of the
+# post-deploy steps that matter in YOUR project.
+# Then rename this file from .sh.template to .sh (and chmod +x) to activate.
+
+set -uo pipefail
+
+input_json=$(cat)
+[ -z "$input_json" ] && exit 0
+
+command=$(echo "$input_json" | jq -r '.tool_input.command // empty' 2>/dev/null)
+[ -z "$command" ] && exit 0
+
+# Match `git ... push` standalone, multi-line, semicolon-chained, with -C/-c flags
+# Using grep with -E so multi-line input is processed line by line.
+if ! echo "$command" | grep -Eq '(^|[[:space:];&|])git[[:space:]][^;&|]*[[:space:]]push([[:space:]]|$)' \
+   && ! echo "$command" | grep -Eq '(^|[[:space:];&|])git[[:space:]]+push([[:space:]]|$)'; then
+    exit 0
+fi
+
+# CUSTOMIZE: replace the message below with what matters in your project.
+msg="DEPLOYMENT REMINDER: git push completed. Consider: (1) appending an entry to your deployment log, (2) checking CI status, (3) verifying the deployed change worked. CUSTOMIZE this reminder in claude-config/hooks/post-bash-git-push.sh."
+
+jq -n --arg msg "$msg" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $msg}}'

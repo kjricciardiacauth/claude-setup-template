@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Hook: PostToolUse / Write|Edit - fire reminder ONLY when the edit touches
+# a path that could plausibly need a CLAUDE.md or memory file update.
+# Replaces the always-fire version which generates "FILE CHANGED" noise
+# on every single Write/Edit.
+#
+# CUSTOMIZE: edit the patterns below to match the paths in YOUR project
+# where edits should trigger a docs-sync reminder.
+# Then rename this file from .sh.template to .sh (and chmod +x) to activate.
+
+set -uo pipefail
+
+input_json=$(cat)
+[ -z "$input_json" ] && exit 0
+
+file_path=$(echo "$input_json" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+[ -z "$file_path" ] && exit 0
+
+lower=$(echo "$file_path" | tr '[:upper:]' '[:lower:]')
+
+# CUSTOMIZE: list the path patterns that matter in YOUR project below
+relevant=false
+[[ "$lower" =~ /claude-config/ ]]                    && relevant=true
+[[ "$lower" =~ /claude\.md$ ]]                       && relevant=true
+[[ "$lower" =~ /agents\.md$ ]]                       && relevant=true
+[[ "$lower" =~ /memory/[^/]*tool[^/]*\.md$ ]]        && relevant=true
+# Add your own patterns:
+# [[ "$lower" =~ /workers/ ]]                         && relevant=true
+# [[ "$lower" =~ /wrangler\.toml$ ]]                  && relevant=true
+# [[ "$lower" =~ /your-critical-dir/ ]]               && relevant=true
+
+[ "$relevant" = false ] && exit 0
+
+msg="FILE CHANGED: $file_path
+
+This path likely affects agent context, hooks, or tool references. Check whether the CLAUDE.md, MEMORY.md index, or AGENTS.md in the affected repo needs updating."
+
+jq -n --arg msg "$msg" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $msg}}'

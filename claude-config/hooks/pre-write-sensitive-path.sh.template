@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Hook: PreToolUse / Write|Edit - warn before touching sensitive paths.
+#
+# Reads stdin hook input, inspects tool_input.file_path, emits a warning
+# system-reminder if the path matches any sensitive pattern. Informational
+# only - does not block.
+#
+# CUSTOMIZE: edit the patterns below to match YOUR sensitive paths.
+# Then rename this file from .sh.template to .sh (and chmod +x) to activate.
+#
+# Known limitation: the Edit tool validates "file must exist" / "must Read
+# first" BEFORE PreToolUse hooks fire. To test this hook, use Write to a
+# non-existent path in a sensitive directory (not Edit).
+
+set -uo pipefail
+
+input_json=$(cat)
+[ -z "$input_json" ] && exit 0
+
+file_path=$(echo "$input_json" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+[ -z "$file_path" ] && exit 0
+
+# Lowercase for pattern matching (normalize separators - on Mac it's already /)
+lower=$(echo "$file_path" | tr '[:upper:]' '[:lower:]')
+
+warnings=()
+
+# Universal patterns - safe to keep as-is for most users
+if [[ "$lower" =~ (^|/)\.env(\.|$) ]]; then
+    warnings+=("Secret file (.env): NEVER commit. Verify .gitignore covers this path. Secrets belong in a secret manager, not in any repo.")
+fi
+if [[ "$lower" =~ /\.claude/settings\.json$ ]] && [[ ! "$lower" =~ /claude-config/ ]]; then
+    warnings+=("Editing ~/.claude/settings.json directly bypasses the symlink target. Edit claude-config/settings.mac.json in the repo instead.")
+fi
+if [[ "$lower" =~ \.(key|pem|p12|pfx)$ ]]; then
+    warnings+=("Cryptographic key file. Never commit. Verify .gitignore covers this extension.")
+fi
+
+# CUSTOMIZE: add YOUR project-specific sensitive paths below. Examples:
+#
+# if [[ "$lower" =~ /legal/ ]]; then
+#     warnings+=("Legal directory: do not modify without explicit instruction.")
+# fi
+# if [[ "$lower" =~ /payroll/ ]] || [[ "$lower" =~ /finance/sensitive/ ]]; then
+#     warnings+=("Payroll / sensitive finance: may contain PII. Never commit raw SSN/bank data.")
+# fi
+
+[ ${#warnings[@]} -eq 0 ] && exit 0
+
+msg="SENSITIVE PATH WARNING for ${file_path}:"
+for w in "${warnings[@]}"; do
+    msg+=$'\n\n'"$w"
+done
+
+jq -n --arg msg "$msg" '{hookSpecificOutput: {hookEventName: "PreToolUse", additionalContext: $msg}}'

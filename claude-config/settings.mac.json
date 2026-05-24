@@ -1,0 +1,123 @@
+{
+  "skillListingBudgetFraction": 0.02,
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(fd:*)",
+      "Bash(bat:*)",
+      "Bash(fzf:*)",
+      "Bash(jq:*)",
+      "Bash(xh:*)",
+      "Bash(zoxide:*)",
+      "Bash(z:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"BUILD AUTHORIZATION REQUIRED: Do not write code, edit files, push commits, or deploy until the user types build, go ahead, or equivalent explicit approval. Default mode is planning, design, discussion, and code review until then.\"}}'",
+            "statusMessage": "Build auth reminder..."
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/pre-compact-rules.sh\" 2>/dev/null || true",
+            "statusMessage": "Re-injecting hard rules before compaction..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"AGENT SPAWN CHECK: Before spawning, state estimated tokens out loud (web research=70-100K, file work=30-60K, MCP probes=40-80K). The agent prompt MUST include: (1) Maximum N tool calls total. Hard stop. (2) Maximum N WebFetch calls. (3) Return at cap even if incomplete. Soft TOKEN CAP lines do NOT work - use tool call caps. If combined parallel estimate exceeds 30% of remaining window, switch to sequential or ask user.\"}}'",
+            "statusMessage": "Agent spawn check..."
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*__(list|search)_",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"PROBE BEFORE PULL: page_size=1 first to confirm shape and total_items. Skip only if this exact tool+filter was already probed this session.\"}}'",
+            "statusMessage": "Probe-before-pull check..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/pre-write-sensitive-path.sh\" 2>/dev/null || true",
+            "statusMessage": "Sensitive path check..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/pre-bash-git-dangerous.sh\" 2>/dev/null || true",
+            "statusMessage": "Dangerous git check..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/post-bash-git-push.sh\" 2>/dev/null || true",
+            "statusMessage": "Checking deployment log..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/post-edit-mcp-docs.sh\" 2>/dev/null || true",
+            "statusMessage": "Checking docs..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/stop-end-of-turn.sh\" 2>/dev/null || true",
+            "statusMessage": "End-of-turn checklist..."
+          }
+        ]
+      }
+    ]
+  }
+}

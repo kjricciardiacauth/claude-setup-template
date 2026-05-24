@@ -140,7 +140,7 @@ if (-not (Test-Path $claudeMdPath)) {
 
 # Settings link - canonical claude-config/settings.json -> ~/.claude/settings.json
 # Prefer symlink (Developer Mode), fall back to hard link.
-$settingsSource = Join-Path $repoRoot "claude-config\settings.json"
+$settingsSource = Join-Path $repoRoot "claude-config\settings.windows.json"
 $settingsTarget = "$env:USERPROFILE\.claude\settings.json"
 if (-not (Test-Path $settingsSource)) {
     Write-Warning "claude-config/settings.json missing in repo - skipping settings link (run 'git pull' first)"

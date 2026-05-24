@@ -14,7 +14,7 @@ Opinionated. Battle-tested across daily use, dozens of sessions, real bugs caugh
 
 ## Autopilot install (Claude Code in auto mode)
 
-Designed to be driven by Claude Code itself. On a fresh PC:
+Designed to be driven by Claude Code itself. **Works on Windows AND macOS/Linux.** Same flow either way - Claude detects your platform.
 
 1. Install Claude Code via your preferred channel.
 2. Clone this repo: `git clone https://github.com/kjricciardiacauth/claude-setup-template.git`
@@ -23,12 +23,13 @@ Designed to be driven by Claude Code itself. On a fresh PC:
 
    > **Bootstrap me from this repo as <your-github-username> / <your-email>**
 
-Claude reads `AGENTS.md` and runs the install end-to-end. It stops only at the explicit auth step (`gh auth login` requires a human in the browser). Total time: ~5 minutes on a clean machine, ~30 seconds if everything is already installed.
+Claude reads `AGENTS.md`, detects your platform, and runs the install end-to-end. It stops only at the explicit auth step (`gh auth login` requires a human in the browser) and (on a fresh Mac) the one-time Homebrew install which prompts for sudo. Total time: ~5 minutes on a clean machine, ~30 seconds if everything is already installed.
 
 ## Manual install
 
 If you prefer to drive it yourself:
 
+### Windows
 ```powershell
 git clone https://github.com/kjricciardiacauth/claude-setup-template.git
 cd claude-setup-template
@@ -38,21 +39,34 @@ gh auth login
 claude
 ```
 
-See [`SETUP.md`](SETUP.md) for the full step-by-step.
+### macOS / Linux
+```bash
+git clone https://github.com/kjricciardiacauth/claude-setup-template.git
+cd claude-setup-template
+chmod +x bootstrap.sh install-cli.sh
+./bootstrap.sh --username "<your-username>" --email "<your-email>"
+gh auth login
+# customize the .template files - see "What to customize" below
+claude
+```
+
+See [`SETUP.md`](SETUP.md) for the full step-by-step (both platforms).
 
 ## What to customize after install
 
-Several files ship with `.template` suffix because they need YOUR project context:
+Several files ship with `.template` suffix because they need YOUR project context. **Each hook ships in both `.ps1.template` (Windows) and `.sh.template` (Mac/Linux) - customize the one matching your platform.**
 
 | File | What to fill in |
 |------|----------------|
 | `memory/MEMORY.md.template` -> `MEMORY.md` | Your domain section headers + topic file pointers |
 | `memory/core-rules.md.template` -> `core-rules.md` | Your hard rules, conventions, security policies |
-| `claude-config/hooks/pre-compact-rules.ps1.template` -> `.ps1` | Your hard rules to re-inject after compaction |
-| `claude-config/hooks/pre-write-sensitive-path.ps1.template` -> `.ps1` | Your sensitive paths (legal/, .env, etc.) |
-| `claude-config/hooks/post-bash-git-push.ps1.template` -> `.ps1` | Your post-deploy reminder text |
-| `claude-config/hooks/post-edit-mcp-docs.ps1.template` -> `.ps1` | Your doc-sync trigger paths |
-| `claude-config/hooks/stop-end-of-turn.ps1.template` -> `.ps1` | Your repo paths to check for uncommitted work |
+| `claude-config/hooks/pre-compact-rules.{ps1\|sh}.template` -> drop `.template` | Your hard rules to re-inject after compaction |
+| `claude-config/hooks/pre-write-sensitive-path.{ps1\|sh}.template` -> drop `.template` | Your sensitive paths (legal/, .env, etc.) |
+| `claude-config/hooks/post-bash-git-push.{ps1\|sh}.template` -> drop `.template` | Your post-deploy reminder text |
+| `claude-config/hooks/post-edit-mcp-docs.{ps1\|sh}.template` -> drop `.template` | Your doc-sync trigger paths |
+| `claude-config/hooks/stop-end-of-turn.{ps1\|sh}.template` -> drop `.template` | Your repo paths to check for uncommitted work |
+
+On Mac/Linux, after renaming a `.sh.template` to `.sh`, run `chmod +x <file>.sh` to make it executable.
 
 The `.template` extension keeps these hooks inactive until you customize them. The settings.json wiring references them all - they no-op silently when the script doesn't exist yet.
 
@@ -83,9 +97,19 @@ See [`docs/architecture.md`](docs/architecture.md) for the rationale and [`memor
 
 ## Platform support
 
-**Windows-first.** Bootstrap script is PowerShell. CLI installer uses winget + scoop. The hook scripts are PowerShell.
+**Windows and macOS, with Linux best-effort.**
 
-Mac / Linux would need translation - the architectural patterns (junctions, hooks, memory structure) transfer cleanly but the implementation is Windows-specific.
+| Component | Windows | macOS | Linux |
+|-----------|---------|-------|-------|
+| Bootstrap | `bootstrap.ps1` (winget + PowerShell) | `bootstrap.sh` (brew) | `bootstrap.sh` (apt - best effort) |
+| CLI installer | `install-cli.ps1` (winget + scoop) | `install-cli.sh` (brew) | requires brew or manual install |
+| Hook scripts | `.ps1` (PowerShell) | `.sh` (bash) | `.sh` (bash) |
+| Settings | `claude-config/settings.windows.json` (auto-linked by bootstrap.ps1) | `claude-config/settings.mac.json` (auto-linked by bootstrap.sh) | same as Mac |
+| Cross-PC sync | symlink (Developer Mode) or hard link | symlink (default) | symlink (default) |
+
+The architecture is platform-neutral. Only the install primitives and shell language differ.
+
+See [`docs/mac-notes.md`](docs/mac-notes.md) for Mac-specific gotchas.
 
 ## License
 

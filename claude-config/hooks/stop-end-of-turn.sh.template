@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Hook: Stop - end-of-turn checklist for uncommitted work.
+#
+# Fires when Claude finishes responding. Checks YOUR list of git repos
+# for uncommitted changes. Emits a systemMessage (user-visible) if any
+# repo is dirty so the session does not end with unsynced code.
+#
+# Performance: ~100ms per `git status --porcelain` per repo.
+# Exits silently and fast when everything is clean.
+#
+# CUSTOMIZE: edit the repos array below to list YOUR repo paths.
+# Then rename this file from .sh.template to .sh (and chmod +x) to activate.
+
+set -uo pipefail
+
+# CUSTOMIZE: list of git repo paths to check at end of every turn.
+# Use $HOME for the home directory. Leave the array empty (or rename
+# this file away from .sh) to disable the hook entirely.
+repos=(
+    # "$HOME/my-project"
+    # "$HOME/another-project"
+)
+
+[ ${#repos[@]} -eq 0 ] && exit 0
+
+dirty_repos=()
+for r in "${repos[@]}"; do
+    [ -d "$r/.git" ] || continue
+    status=$(git -C "$r" status --porcelain 2>/dev/null)
+    [ -z "$status" ] && continue
+    repo_name=$(basename "$r")
+    count=$(echo "$status" | wc -l | tr -d ' ')
+    dirty_repos+=("${repo_name}: $count uncommitted file(s)")
+done
+
+[ ${#dirty_repos[@]} -eq 0 ] && exit 0
+
+msg="END-OF-TURN: uncommitted changes:"
+for d in "${dirty_repos[@]}"; do
+    msg+=$'\n  - '"$d"
+done
+msg+=$'\n\nCommit + push before ending session if this work should sync to other machines.'
+
+jq -n --arg msg "$msg" '{systemMessage: $msg}'
