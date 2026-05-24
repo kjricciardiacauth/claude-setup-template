@@ -1,0 +1,66 @@
+# Hook: PreToolUse / Write|Edit - warn before touching sensitive paths.
+#
+# Reads stdin hook input, inspects tool_input.file_path, emits a warning
+# system-reminder if the path matches any sensitive pattern. Informational
+# only - does not block (Claude reads the warning and acts accordingly).
+#
+# CUSTOMIZE: edit the regex patterns below to match YOUR sensitive paths.
+# Then rename this file from .ps1.template to .ps1 to activate it.
+#
+# Known limitation: the Edit tool validates "file must exist" / "must Read
+# first" BEFORE PreToolUse hooks fire. To test this hook, use Write to a
+# non-existent path in a sensitive directory (not Edit).
+
+$ErrorActionPreference = "SilentlyContinue"
+$inputJson = [Console]::In.ReadToEnd()
+if (-not $inputJson) { exit 0 }
+
+try {
+    $data = $inputJson | ConvertFrom-Json
+} catch {
+    exit 0
+}
+
+$filePath = $data.tool_input.file_path
+if (-not $filePath) { exit 0 }
+
+# Normalize separators + lowercase for pattern matching
+$lower = $filePath.ToLower().Replace('\', '/')
+
+$warnings = @()
+
+# Universal patterns - safe to keep as-is for most users
+if ($lower -match '(^|/)\.env($|\.)') {
+    $warnings += "Secret file (.env): NEVER commit. Verify .gitignore covers this path. Secrets belong in a secret manager, not in any repo."
+}
+if ($lower -match '/\.claude/settings\.json$' -and $lower -notmatch '/claude-config/') {
+    $warnings += "Editing ~/.claude/settings.json directly will BREAK the hard link to claude-config/settings.json (Edit tool uses atomic-rename which breaks hard links). Edit the canonical file at claude-config/settings.json instead, then re-link via bootstrap.ps1 or 'mklink /H'."
+}
+if ($lower -match '\.(key|pem|p12|pfx)$') {
+    $warnings += "Cryptographic key file. Never commit. Verify .gitignore covers this extension."
+}
+
+# CUSTOMIZE: add YOUR project-specific sensitive paths below. Examples:
+#
+# if ($lower -match '/legal/') {
+#     $warnings += "Legal directory: do not modify without explicit instruction."
+# }
+# if ($lower -match '/payroll/' -or $lower -match '/finance/sensitive/') {
+#     $warnings += "Payroll / sensitive finance: may contain PII. Never commit raw SSN/bank data."
+# }
+# if ($lower -match '/your-active-matter-dir/') {
+#     $warnings += "Active matter - explicit approval required."
+# }
+
+if ($warnings.Count -eq 0) { exit 0 }
+
+$msg = "SENSITIVE PATH WARNING for ${filePath}:`n`n" + ($warnings -join "`n`n")
+
+$reminder = @{
+    hookSpecificOutput = @{
+        hookEventName     = "PreToolUse"
+        additionalContext = $msg
+    }
+} | ConvertTo-Json -Compress -Depth 5
+
+Write-Output $reminder

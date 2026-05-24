@@ -1,0 +1,37 @@
+# Hook: PreCompact - re-inject hard rules so they survive context compaction.
+#
+# Research finding: the #1 reason CLAUDE.md rules get ignored is that
+# compaction summarizes them away - "what was a rule becomes a vague memory."
+# Hooks fire as clean system-reminder messages (no "may or may not be
+# relevant" disclaimer), so rules re-injected via PreCompact stay
+# structurally authoritative across the compaction boundary.
+#
+# CUSTOMIZE: edit the additionalContext string below to list YOUR hard rules.
+# Then rename this file from .ps1.template to .ps1 to activate it.
+
+$reminder = @{
+    hookSpecificOutput = @{
+        hookEventName     = "PreCompact"
+        additionalContext = @"
+HARD RULES (re-injected because compaction summarizes CLAUDE.md content away):
+
+1. BUILD AUTHORIZATION: No code, edits, commits, or deploys until the user types 'build', 'go ahead', or equivalent explicit approval. Default mode = planning / discussion / code review.
+
+# CUSTOMIZE: add your own hard rules below. Examples to consider:
+#
+# 2. PROBE BEFORE PULL: page_size=1 first on any list/search MCP tool. State total_items before scaling up.
+#
+# 3. SENSITIVE DIRECTORIES: Never modify any file in <your-legal-dir>/, <your-secrets-dir>/ without explicit instruction.
+#
+# 4. PRIVACY: Never commit PII (SSN, bank account, credit card).
+#
+# 5. GIT IDENTITY: <your-username> / <your-email>.
+#
+# 6. SETTINGS EDIT: ~/.claude/settings.json is HARD-LINKED to claude-config/settings.json. Edit the canonical file, not the link target (Edit-tool atomic-rename breaks hard links).
+#
+# 7. AGENT SPAWNING: hard tool-call cap required, soft caps don't work. Estimate tokens before spawning. <10 calls -> direct execution.
+"@
+    }
+} | ConvertTo-Json -Compress -Depth 5
+
+Write-Output $reminder

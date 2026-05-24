@@ -1,0 +1,51 @@
+# Hook: PostToolUse / Write|Edit - fire reminder ONLY when the edit touches
+# a path that could plausibly need a CLAUDE.md or memory file update.
+# Replaces the always-fire version which generates "FILE CHANGED" noise
+# on every single Write/Edit.
+#
+# CUSTOMIZE: edit the $relevant pattern list below to match the paths in
+# YOUR project where edits should trigger a docs-sync reminder. Examples:
+# - workers/**           (Cloudflare Workers source)
+# - claude-config/**     (hooks, rules, settings)
+# - **/CLAUDE.md, **/AGENTS.md   (agent context)
+# - **/wrangler.toml     (worker bindings)
+# - memory/*tool*.md     (MCP tool reference files)
+# Then rename this file from .ps1.template to .ps1 to activate it.
+
+$ErrorActionPreference = "SilentlyContinue"
+$inputJson = [Console]::In.ReadToEnd()
+if (-not $inputJson) { exit 0 }
+
+try {
+    $data = $inputJson | ConvertFrom-Json
+} catch {
+    exit 0
+}
+
+$filePath = $data.tool_input.file_path
+if (-not $filePath) { exit 0 }
+
+$lower = $filePath.ToLower().Replace('\', '/')
+
+# CUSTOMIZE: list the path patterns that matter in YOUR project below
+$relevant = (
+    $lower -match '/claude-config/' -or
+    $lower -match '/claude\.md$' -or
+    $lower -match '/agents\.md$' -or
+    $lower -match '/memory/[^/]*tool[^/]*\.md$'
+    # Add your own patterns:
+    # -or $lower -match '/workers/'
+    # -or $lower -match '/wrangler\.toml$'
+    # -or $lower -match '/your-critical-dir/'
+)
+
+if (-not $relevant) { exit 0 }
+
+$reminder = @{
+    hookSpecificOutput = @{
+        hookEventName     = "PostToolUse"
+        additionalContext = "FILE CHANGED: $filePath`n`nThis path likely affects agent context, hooks, or tool references. Check whether the CLAUDE.md, MEMORY.md index, or AGENTS.md in the affected repo needs updating."
+    }
+} | ConvertTo-Json -Compress -Depth 5
+
+Write-Output $reminder

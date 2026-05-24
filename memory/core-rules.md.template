@@ -1,0 +1,113 @@
+# Core Rules - REPLACE: Your Project Name
+
+This file is imported by `~/.claude/CLAUDE.md` at every session start. Keep it under ~120 lines. Per the research brief, instruction compliance decays linearly past ~150 instructions.
+
+**To activate:** rename this file from `core-rules.md.template` to `core-rules.md` and fill in YOUR rules. Anything that must be enforced (not just suggested) belongs in a hook, not here.
+
+---
+
+## Execution Authorization
+
+**HARD RULE:** No code, edits, commits, or deploys until the user types **"build"** (or "go ahead" / equivalent). Default mode = planning, design, discussion, code review. *(Also enforced by SessionStart hook.)*
+
+---
+
+## Probe Before Pull - All List/Query Tools
+
+Always `page_size=1` (or smallest allowed) first, confirm shape + `total_items`, then pull with calibrated params. Skip only if already probed this exact combo this session, or tool is hard-capped by design.
+
+*(Also reminded by PreToolUse hook on `mcp__*__(list|search)_` matchers.)*
+
+---
+
+## Agent / Subagent Token Efficiency
+
+**Spawning an Agent is expensive.** Default to direct tools. Use agents only for: multi-file exploration across unknown structure (use `Explore`), research needing 5+ web sources with synthesis, or tasks explicitly tagged "go deep". <10 tool calls = direct execution, no agent.
+
+**Parallel vs sequential:** parallel for independent subtasks when budget OK; sequential when uncertain scope, tight budget, or coordination risk.
+
+**Soft caps DO NOT work.** Every agent prompt MUST include hard architectural limits:
+- `"Maximum N tool calls total. Hard stop at N."`
+- `"Maximum N WebFetch calls."`
+- `"Return whatever you have at the cap, even if incomplete."`
+
+*(PreToolUse `Agent` hook re-injects the pre-spawn checklist on every spawn.)*
+
+---
+
+## REPLACE: Your Project's GitHub Auth Pattern
+
+Example:
+```powershell
+git -C <repo-path> config user.name "<your-username>"
+git -C <repo-path> config user.email "<your-email>"
+```
+
+The bootstrap.ps1 script you ran configured this for the template repo. Replicate for any other repos you clone.
+
+---
+
+## REPLACE: Your Project's Sync Pattern
+
+Document how your memory / config / shared files propagate between machines. The default pattern in this template:
+
+- `memory/` files are junctioned from `~/.claude/projects/<encoded>/memory/`
+- `claude-config/settings.json` is linked (hard link or symlink) to `~/.claude/settings.json`
+- Sync happens via `git pull` on each PC
+
+Edit these sentences if you do something different.
+
+---
+
+## Security
+
+- Secrets never in repos - use a secret manager (Cloudflare Workers env vars, AWS Secrets Manager, 1Password, etc.)
+- Never track `.env` files - `.gitignore` covers `*.env` and `.env.*` by default in this template
+- Never enter credit card numbers, API keys, or credentials in chat
+- API keys in messages can leak in transcripts - prefer environment variables
+
+---
+
+## REPLACE: Your Project's Custom Sections
+
+Add sections specific to your project below. Examples:
+
+### Deployment
+
+How your project deploys. Where, when, by what mechanism. What never to do.
+
+### External Services
+
+Which APIs your project depends on, their auth model, where credentials live, common quirks.
+
+### Conventions
+
+Naming, file layout, formatting rules you can't enforce via linter.
+
+### Glossary
+
+Domain terms an outsider wouldn't know. Acronyms specific to your project.
+
+---
+
+## CLI Toolset
+
+Tier 1 (installed via `install-cli.ps1`): **rg, fd, bat, fzf, jq, xh, zoxide**.
+Prefer these over PowerShell-native equivalents:
+
+- `rg` over `Select-String` (faster, gitignore-aware)
+- `fd` over `Get-ChildItem -Recurse -Filter` (faster, smart-case)
+- `bat` over `Get-Content` for viewing source (syntax highlight)
+- `jq` over `ConvertFrom-Json | Where-Object` for ad-hoc JSON filtering
+- `xh` over `Invoke-RestMethod` for REST endpoints
+- `z <prefix>` (zoxide) over `cd <full-path>` for hopping between repos
+
+Tier 2 (lazygit, gron, uv, starship, gh-dash) installed by the same script. See [`cli_toolset.md`](cli_toolset.md) for full reference.
+
+---
+
+## Cross-PC Bootstrap
+
+On a fresh machine, tell Claude: **"Bootstrap me from \<your-repo-url\> as \<your-username\> / \<your-email\>"**
+
+Claude reads `AGENTS.md` at the repo root and drives the install. Restart Claude Code after bootstrap to pick up the new memory + hooks.

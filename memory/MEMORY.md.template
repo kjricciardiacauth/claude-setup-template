@@ -1,0 +1,51 @@
+# MEMORY.md - your auto-loaded index
+
+This is your memory index. The first 200 lines auto-inject every Claude Code session, so keep it tight: one-line pointers grouped by domain, never the topic content itself.
+
+**To activate:** rename this file from `MEMORY.md.template` to `MEMORY.md` and fill in your own pointers.
+
+## Why the section headers matter
+
+A flat list of 40+ memory pointers forces Claude to scan everything to find relevance. Grouping by domain (see the headers below) lets Claude jump straight to the relevant section. This is the highest-ROI organizational fix per the research brief.
+
+---
+
+## Core Infrastructure & Rules
+
+- [Core rules](core-rules.md) - execution authorization, sync conventions, security rules; loaded via `~/.claude/CLAUDE.md` import at every session start
+- [LLM context best practices](llm_context_best_practices.md) - the layered context model, CLAUDE.md size limits, anti-patterns, action items
+- [Hooks sync pattern](hooks_sync_pattern.md) - how `claude-config/settings.json` syncs across machines via hard link or symlink
+- [CLI toolset](cli_toolset.md) - Tier 1/2 CLI tools installed via `install-cli.ps1`
+
+## Project A (REPLACE: your primary project name)
+
+- [Project overview](project-a.md) - what this project is, why it exists, current focus
+- [Conventions](project-a-conventions.md) - coding style, file layout, naming
+- [Quirks and gotchas](project-a-gotchas.md) - non-obvious behaviors
+
+## External Tools / APIs
+
+- [Tool 1 reference](tool1.md) - REPLACE: the API/tool you call most often
+- [Tool 2 reference](tool2.md) - REPLACE: the second most-used tool
+
+## Operations / Workflows
+
+- [Daily workflow](daily-workflow.md) - REPLACE: how you start the day, what gets checked
+- [Common procedures](procedures.md) - REPLACE: recurring multi-step tasks
+
+## Reference
+
+- [Glossary](glossary.md) - REPLACE: domain terms, acronyms, internal jargon
+
+---
+
+## How to use this
+
+1. **Add a memory topic file:** create `memory/<topic>.md` with the full content
+2. **Add a one-line pointer here:** `- [Display name](<topic>.md) - one-line hook describing what's inside`
+3. **Group by domain:** put it under the right `##` section. If no section fits, add a new one.
+4. **Keep MEMORY.md under 200 lines.** Anything more gets truncated from the auto-injected context window.
+
+When you want depth: Claude reads the topic file on demand. When you want breadth: Claude scans this index.
+
+See `memory/llm_context_best_practices.md` for the research behind this pattern.

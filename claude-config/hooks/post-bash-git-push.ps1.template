@@ -1,0 +1,39 @@
+# Hook: PostToolUse / Bash - reminder fires ONLY on `git ... push`
+#
+# Reads stdin, inspects tool_input.command, emits the reminder ONLY when
+# a git push was just run. Catches `git push`, `git -C /path push`,
+# `git -c key=val push`, multi-line scripts that end in push, and
+# semicolon-chained `git add . ; git push`. Does NOT match `git log | grep push`
+# (the [^;&|\n]* class won't cross shell separators).
+#
+# CUSTOMIZE: edit the additionalContext string below to remind YOURSELF
+# of the post-deploy steps that matter in YOUR project. Examples:
+# - "Append entry to docs/DEPLOYMENT_LOG.md"
+# - "Check CI status at <your-CI-url>"
+# - "Verify the deployment at <your-staging-url>"
+# Then rename this file from .ps1.template to .ps1 to activate it.
+
+$ErrorActionPreference = "SilentlyContinue"
+$inputJson = [Console]::In.ReadToEnd()
+if (-not $inputJson) { exit 0 }
+
+try {
+    $data = $inputJson | ConvertFrom-Json
+} catch {
+    exit 0
+}
+
+$command = $data.tool_input.command
+if (-not $command) { exit 0 }
+
+# Match `git ... push` standalone, multi-line, semicolon-chained, with -C/-c flags
+if ($command -notmatch '(?m)(?:^|[\s;&|`])git\s+[^;&|\n]*\bpush\b') { exit 0 }
+
+$reminder = @{
+    hookSpecificOutput = @{
+        hookEventName     = "PostToolUse"
+        additionalContext = "DEPLOYMENT REMINDER: git push completed. Consider: (1) appending an entry to your deployment log, (2) checking CI status, (3) verifying the deployed change worked. CUSTOMIZE this reminder in claude-config/hooks/post-bash-git-push.ps1."
+    }
+} | ConvertTo-Json -Compress -Depth 5
+
+Write-Output $reminder

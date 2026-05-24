@@ -1,0 +1,30 @@
+# Local-only Claude Code state (machine-specific)
+.claude/settings.local.json
+.claude/.credentials.json
+.claude/projects/
+.claude/sessions/
+.claude/plugins/
+
+# Backups created by bootstrap.ps1 when an existing settings.json is replaced
+claude-config/settings.json.bak-*
+*.bak-*
+
+# Secrets - NEVER commit
+*.env
+.env
+.env.*
+*.key
+*.pem
+secrets/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Python venvs if anyone adds Python scripts
+.venv/
+__pycache__/
+*.pyc
