@@ -1,0 +1,13 @@
+{
+  "projects": [
+    {
+      "repo": "your-username/your-repo",
+      "owner": "your-username",
+      "ownerType": "user",
+      "projectNumber": 1,
+      "account": "your-username",
+      "pathHints": ["your-repo"],
+      "relatedRepos": []
+    }
+  ]
+}
