@@ -73,8 +73,12 @@ Several files ship with `.template` suffix because they need YOUR project contex
 | `claude-config/hooks/post-bash-git-push.{ps1\|sh}.template` -> drop `.template` | Your post-deploy reminder text |
 | `claude-config/hooks/post-edit-mcp-docs.{ps1\|sh}.template` -> drop `.template` | Your doc-sync trigger paths |
 | `claude-config/hooks/stop-end-of-turn.{ps1\|sh}.template` -> drop `.template` | Your repo paths to check for uncommitted work |
+| `claude-config/rules/github-projects.json.template` -> `github-projects.json` | Your GitHub Projects repos (board number, owner, account) - enables the board gate |
+| `claude-config/hooks/stop-board-gate.{ps1\|sh}.template` -> drop `.template` | Activate the board-update gate (needs the registry above) |
 
 On Mac/Linux, after renaming a `.sh.template` to `.sh`, run `chmod +x <file>.sh` to make it executable.
+
+**Opt-in (GitHub Projects users):** `claude-config/rules/github-rules.md` documents board + identity discipline. Fill in `github-projects.json` and rename `stop-board-gate.{ps1|sh}.template` to enable a Stop gate that blocks shipping to a tracked repo without a board update. `claude-config/rules/workers.md` adds Cloudflare Workers deploy conventions (loads only when worker files are active).
 
 The `.template` extension keeps these hooks inactive until you customize them. The settings.json wiring references them all - they no-op silently when the script doesn't exist yet.
 

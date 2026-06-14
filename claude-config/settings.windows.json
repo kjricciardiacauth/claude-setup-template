@@ -155,6 +155,12 @@
             "shell": "powershell",
             "command": "& \"$env:USERPROFILE\\.claude\\hooks\\stop-verify-gate.ps1\"",
             "statusMessage": "Verify gate check..."
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:USERPROFILE\\.claude\\hooks\\stop-board-gate.ps1\"",
+            "statusMessage": "Board gate check..."
           }
         ]
       }

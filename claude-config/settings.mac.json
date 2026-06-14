@@ -155,6 +155,12 @@
             "shell": "bash",
             "command": "bash \"$HOME/.claude/hooks/stop-verify-gate.sh\" 2>/dev/null || true",
             "statusMessage": "Verify gate check..."
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/stop-board-gate.sh\" 2>/dev/null || true",
+            "statusMessage": "Board gate check..."
           }
         ]
       }
