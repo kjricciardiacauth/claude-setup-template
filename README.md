@@ -4,6 +4,8 @@ A starter template for setting up a Claude Code dev environment that actually wo
 
 Opinionated. Battle-tested across daily use, dozens of sessions, real bugs caught.
 
+**New here? Start with [`GUIDE.md`](GUIDE.md)** - the curriculum spine (Fundamentals -> Tools -> Hooks -> Rules -> Best Practices -> Workflows) that orients you through everything below.
+
 ## What you get
 
 - **Bootstrap script** that installs Claude Code, sets up `~/.claude/` junctions to this repo, and configures git identity - all idempotent, all driven by command-line flags.
