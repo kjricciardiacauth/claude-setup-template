@@ -107,6 +107,8 @@ Four-tier context loading:
 
 See [`docs/architecture.md`](docs/architecture.md) for the rationale and [`memory/llm_context_best_practices.md`](memory/llm_context_best_practices.md) for the research it's based on.
 
+See [`docs/best-practices.md`](docs/best-practices.md) for the operating principles this template encodes, and [`docs/workflows.md`](docs/workflows.md) for the brainstorm -> plan -> execute -> finish workflow and the parallel-lane pattern.
+
 ## Platform support
 
 **Windows and macOS, with Linux best-effort.**
