@@ -12,6 +12,32 @@ This file is imported by `~/.claude/CLAUDE.md` at every session start. Keep it u
 
 ---
 
+## Verification Before Completion
+
+**HARD RULE:** Never claim work is **done / fixed / sent / passing** without verifying it against a fresh read. A successful tool call proves it *ran*, not that the resulting *state* is correct.
+- External writes -> re-fetch and confirm the field changed. Sends -> confirm it left as SENT (else say "drafted, not sent").
+- File edits -> re-read the changed region; for a fix, show the check/test output. git/deploy -> show the real output.
+
+State the evidence first, then the claim. *(Enforced by the `stop-verify-gate` hook.)*
+
+---
+
+## Irreversible / Outward-Facing Actions
+
+**HARD RULE:** Never take an irreversible or outward-facing action without explicit, per-action approval - sends (email/chat/SMS), deletes, deploys, and any customer- or public-facing write. Default to **draft + stage, then wait** for "send"/"go". Approval for one action does not extend to the next; when in doubt, treat it as irreversible and ask.
+
+---
+
+## Debugging Discipline
+
+- **Match the working reference exactly** before deviating; change ONE variable at a time.
+- **Don't blame the environment** (rate-limit / flaky / throttled) without POSITIVE proof - run the cheapest test that DISPROVES it first.
+- **At 3 failed fixes, STOP** and question the fundamentals; re-read the error and form a new hypothesis.
+
+See [`../docs/best-practices.md`](../docs/best-practices.md) and [`../docs/workflows.md`](../docs/workflows.md) for these principles in full, with the reasoning behind each.
+
+---
+
 ## Probe Before Pull - All List/Query Tools
 
 Always `page_size=1` (or smallest allowed) first, confirm shape + `total_items`, then pull with calibrated params. Skip only if already probed this exact combo this session, or tool is hard-capped by design.

@@ -16,7 +16,7 @@ Opinionated. Battle-tested across daily use, dozens of sessions, real bugs caugh
 - `pre-bash-github-identity` - blocks `gh auth switch` and warns on bare `github.com` push origins; account-agnostic. Bypass with `CLAUDE_SKIP_GH_IDENTITY=1`.
 
 The ledger lives in `~/.claude/sessions/` (your home dir, not this repo) - nothing is committed.
-- **Memory architecture** with proven patterns: domain-grouped MEMORY.md index, on-demand topic files, skill-vs-memory routing rationale.
+- **Memory architecture** with proven patterns: domain-grouped MEMORY.md index, on-demand topic files, skill-vs-memory routing rationale. The starter `core-rules.md` ships with the matured disciplines baked in - build-authorization, verification-before-completion, irreversible-action caution, debugging discipline, and probe-before-pull.
 - **CLI installer** for the 12 tools that make working in Claude Code dramatically faster (Tier 1: rg, fd, bat, fzf, jq, xh, zoxide. Tier 2: lazygit, gron, uv, starship, gh-dash).
 - **Research brief** distilling Anthropic docs + community findings on context architecture, CLAUDE.md size limits, anti-patterns - the WHY behind every pattern in this template.
 
