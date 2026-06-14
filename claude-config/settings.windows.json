@@ -21,6 +21,12 @@
             "shell": "powershell",
             "command": "Write-Output '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"BUILD AUTHORIZATION REQUIRED: Do not write code, edit files, push commits, or deploy until the user types build, go ahead, or equivalent explicit approval. Default mode is planning, design, discussion, and code review until then.\"}}'",
             "statusMessage": "Build auth reminder..."
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:USERPROFILE\\.claude\\hooks\\session-log-start.ps1\"",
+            "statusMessage": "Logging session start..."
           }
         ]
       }
@@ -79,6 +85,34 @@
             "shell": "powershell",
             "command": "& \"$env:USERPROFILE\\.claude\\hooks\\pre-bash-git-dangerous.ps1\"",
             "statusMessage": "Dangerous git check..."
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:USERPROFILE\\.claude\\hooks\\pre-bash-github-identity.ps1\"",
+            "statusMessage": "GitHub identity check..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:USERPROFILE\\.claude\\hooks\\session-log-toolcall.ps1\"",
+            "statusMessage": "Logging tool call..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:USERPROFILE\\.claude\\hooks\\pre-write-secrets-scan.ps1\"",
+            "statusMessage": "Secrets scan..."
           }
         ]
       }
@@ -115,6 +149,12 @@
             "shell": "powershell",
             "command": "& \"$env:USERPROFILE\\.claude\\hooks\\stop-end-of-turn.ps1\"",
             "statusMessage": "End-of-turn checklist..."
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:USERPROFILE\\.claude\\hooks\\stop-verify-gate.ps1\"",
+            "statusMessage": "Verify gate check..."
           }
         ]
       }

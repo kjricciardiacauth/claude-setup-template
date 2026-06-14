@@ -21,6 +21,12 @@
             "shell": "bash",
             "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"BUILD AUTHORIZATION REQUIRED: Do not write code, edit files, push commits, or deploy until the user types build, go ahead, or equivalent explicit approval. Default mode is planning, design, discussion, and code review until then.\"}}'",
             "statusMessage": "Build auth reminder..."
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/session-log-start.sh\" 2>/dev/null || true",
+            "statusMessage": "Logging session start..."
           }
         ]
       }
@@ -79,6 +85,34 @@
             "shell": "bash",
             "command": "bash \"$HOME/.claude/hooks/pre-bash-git-dangerous.sh\" 2>/dev/null || true",
             "statusMessage": "Dangerous git check..."
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/pre-bash-github-identity.sh\" 2>/dev/null || true",
+            "statusMessage": "GitHub identity check..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/session-log-toolcall.sh\" 2>/dev/null || true",
+            "statusMessage": "Logging tool call..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/pre-write-secrets-scan.sh\" 2>/dev/null || true",
+            "statusMessage": "Secrets scan..."
           }
         ]
       }
@@ -115,6 +149,12 @@
             "shell": "bash",
             "command": "bash \"$HOME/.claude/hooks/stop-end-of-turn.sh\" 2>/dev/null || true",
             "statusMessage": "End-of-turn checklist..."
+          },
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"$HOME/.claude/hooks/stop-verify-gate.sh\" 2>/dev/null || true",
+            "statusMessage": "Verify gate check..."
           }
         ]
       }

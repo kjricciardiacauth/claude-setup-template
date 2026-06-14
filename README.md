@@ -7,7 +7,15 @@ Opinionated. Battle-tested across daily use, dozens of sessions, real bugs caugh
 ## What you get
 
 - **Bootstrap script** that installs Claude Code, sets up `~/.claude/` junctions to this repo, and configures git identity - all idempotent, all driven by command-line flags.
-- **Hook stack** (8 hooks, 1 universal + 5 templates) that enforce build-authorization, warn before dangerous git commands, remind about deploys, check for uncommitted work at end of every turn, and re-inject your rules after context compaction.
+- **Hook stack** (13 hooks: 5 always-active + 1 universal + 5 templates + 2 post-use) that enforce build-authorization, warn before dangerous git commands, remind about deploys, check for uncommitted work at end of every turn, and re-inject your rules after context compaction.
+
+**Always-active hooks (no customization needed):**
+- `session-log-start` / `session-log-toolcall` - write a local cross-session activity ledger to `~/.claude/sessions/log.md` (so concurrent sessions see recent work, and the verification gate has data).
+- `stop-verify-gate` - on any turn that changed state (edits, mutating shell, git/deploy), blocks the turn once and requires verifying the result against fresh reads before claiming done. Bypass with `CLAUDE_SKIP_VERIFY_GATE=1`.
+- `pre-write-secrets-scan` - denies a Write/Edit whose content matches a live-credential shape (AWS/GitHub/Slack/Stripe/etc.).
+- `pre-bash-github-identity` - blocks `gh auth switch` and warns on bare `github.com` push origins; account-agnostic. Bypass with `CLAUDE_SKIP_GH_IDENTITY=1`.
+
+The ledger lives in `~/.claude/sessions/` (your home dir, not this repo) - nothing is committed.
 - **Memory architecture** with proven patterns: domain-grouped MEMORY.md index, on-demand topic files, skill-vs-memory routing rationale.
 - **CLI installer** for the 12 tools that make working in Claude Code dramatically faster (Tier 1: rg, fd, bat, fzf, jq, xh, zoxide. Tier 2: lazygit, gron, uv, starship, gh-dash).
 - **Research brief** distilling Anthropic docs + community findings on context architecture, CLAUDE.md size limits, anti-patterns - the WHY behind every pattern in this template.
