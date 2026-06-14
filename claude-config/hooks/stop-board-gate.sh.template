@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Hook: Stop - board-update gate for tracked GitHub Projects work. (Mac/Linux)
+# Opt-in: inert unless ~/.claude/rules/github-projects.json exists and lists a project.
+# Rename this file to stop-board-gate.sh to activate. Bypass: CLAUDE_SKIP_BOARD_GATE=1
+set -uo pipefail
+[ "${CLAUDE_SKIP_BOARD_GATE:-}" = "1" ] && exit 0
+input_json=$(cat)
+[ -z "$input_json" ] && exit 0
+active=$(echo "$input_json" | jq -r '.stop_hook_active // false' 2>/dev/null)
+[ "$active" = "true" ] && exit 0
+id=$(echo "$input_json" | jq -r '.session_id // empty' 2>/dev/null)
+[ -z "$id" ] && exit 0
+id8=${id:0:8}
+dir="$HOME/.claude/sessions"
+log="$dir/log.md"
+[ -f "$log" ] || exit 0
+
+mapfile -t mine < <(grep -F "[$id8] -> " "$log" 2>/dev/null)
+total=${#mine[@]}
+[ "$total" -eq 0 ] && exit 0
+
+mark="$dir/$id8.boardgate"
+prior=0
+[ -f "$mark" ] && prior=$(tr -dc '0-9' < "$mark" 2>/dev/null) && prior=${prior:-0}
+[ "$total" -le "$prior" ] && exit 0
+new=("${mine[@]:$prior}")
+
+reg="$HOME/.claude/rules/github-projects.json"
+_mark_exit() { echo "$total" > "$mark" 2>/dev/null || true; exit 0; }
+[ -f "$reg" ] || _mark_exit
+
+signals=$(jq -r '[.projects[]? | .repo, (.relatedRepos[]?), (.pathHints[]?)] | map(select(. != null and . != "")) | unique | join("|")' "$reg" 2>/dev/null)
+[ -z "$signals" ] && _mark_exit
+
+newblob=$(printf '%s\n' "${new[@]}")
+echo "$newblob" | grep -Eq "$signals" || _mark_exit
+
+shipped=$(echo "$newblob" | grep -E -- 'Bash[[:space:]].*(git (commit|push)|gh release create|wrangler deploy)' || true)
+[ -z "$shipped" ] && _mark_exit
+
+boardop=$(echo "$newblob" | grep -E -- 'Bash[[:space:]].*(gh project|gh issue (close|create|comment|edit))' || true)
+
+echo "$total" > "$mark" 2>/dev/null || true
+[ -n "$boardop" ] && exit 0
+
+shiplist=$(echo "$shipped" | head -8 | sed 's/^/  /')
+reason="BOARD GATE - this turn shipped work to a tracked GitHub Projects repo but did not update its board.
+
+Shipped this turn:
+$shiplist
+
+Before ending: move/close the matching card with the commit hash (e.g.
+  gh issue close <n> --repo <owner>/<repo> --comment \"Fixed in <hash>\"
+  gh project item-edit --id <item> --project-id <proj> --field-id <Status> --single-select-option-id <Done>),
+OR create a card for new work, OR state explicitly why no card applies. Then stop.
+If you ALREADY updated the board this turn, say which card and stop."
+
+jq -n --arg r "$reason" '{decision:"block", reason:$r}'
+exit 0

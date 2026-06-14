@@ -1,0 +1,77 @@
+# Hook: Stop - board-update gate for tracked GitHub Projects work.
+# If this turn SHIPPED work to a tracked repo (git commit/push, gh release, wrangler deploy with a registry
+# signal) but made NO board update (no gh project / gh issue op in the same turn), block so the turn updates the
+# board (or states why no card applies). Reads the activity ledger written by session-log-toolcall.
+# Opt-in: inert unless ~/.claude/rules/github-projects.json exists and lists a project.
+# Rename this file to stop-board-gate.ps1 to activate. Bypass: $env:CLAUDE_SKIP_BOARD_GATE = "1"
+if ($env:CLAUDE_SKIP_BOARD_GATE -eq "1") { exit 0 }
+try {
+    $stdin = [Console]::In.ReadToEnd()
+    if ([string]::IsNullOrWhiteSpace($stdin)) { exit 0 }
+    $payload = $stdin | ConvertFrom-Json
+    if ($payload.stop_hook_active) { exit 0 }
+    if (-not $payload.session_id) { exit 0 }
+    $id8 = $payload.session_id.Substring(0, 8)
+
+    $sessionDir = "$env:USERPROFILE\.claude\sessions"
+    $logFile    = "$sessionDir\log.md"
+    if (-not (Test-Path $logFile)) { exit 0 }
+
+    $mine = @(Get-Content $logFile -ErrorAction Stop | Where-Object { $_ -match "\[$id8\] -> " })
+    $total = $mine.Count
+    if ($total -eq 0) { exit 0 }
+
+    $markFile = "$sessionDir\$id8.boardgate"
+    $prior = 0
+    if (Test-Path $markFile) {
+        $raw = (Get-Content $markFile -Raw -ErrorAction SilentlyContinue).Trim()
+        [int]::TryParse($raw, [ref]$prior) | Out-Null
+    }
+    if ($total -le $prior) { exit 0 }
+    $new = $mine[$prior..($total - 1)]
+
+    $regPath = "$env:USERPROFILE\.claude\rules\github-projects.json"
+    if (-not (Test-Path $regPath)) { Set-Content -Path $markFile -Value "$total" -EA SilentlyContinue; exit 0 }
+    try { $reg = Get-Content $regPath -Raw -EA Stop | ConvertFrom-Json } catch { exit 0 }
+    $signals = @()
+    foreach ($p in $reg.projects) {
+        if ($p.repo) { $signals += [regex]::Escape($p.repo) }
+        foreach ($r in $p.relatedRepos) { $signals += [regex]::Escape($r) }
+        foreach ($h in $p.pathHints) { $signals += [regex]::Escape($h) }
+    }
+    if ($signals.Count -eq 0) { Set-Content -Path $markFile -Value "$total" -EA SilentlyContinue; exit 0 }
+    $sigRegex = ($signals -join '|')
+
+    $tracked = $new | Where-Object { $_ -match $sigRegex }
+    if (-not $tracked) { Set-Content -Path $markFile -Value "$total" -ErrorAction SilentlyContinue; exit 0 }
+
+    $shipped = $new | Where-Object {
+        ($_ -match '-> Bash\s+.*(git (commit|push)|gh release create|wrangler deploy)') -and
+        ($_ -match $sigRegex)
+    }
+    if (-not $shipped) {
+        $anyShip = $new | Where-Object { $_ -match '-> Bash\s+.*(git (commit|push)|gh release create|wrangler deploy)' }
+        if ($anyShip) { $shipped = $anyShip }
+    }
+    if (-not $shipped) { Set-Content -Path $markFile -Value "$total" -ErrorAction SilentlyContinue; exit 0 }
+
+    $boardOp = $new | Where-Object { $_ -match '-> Bash\s+.*(gh project|gh issue (close|create|comment|edit))' }
+
+    Set-Content -Path $markFile -Value "$total" -ErrorAction SilentlyContinue
+    if ($boardOp) { exit 0 }
+
+    $shipList = ($shipped | Select-Object -First 8 | ForEach-Object { "  $_" }) -join "`n"
+    $reason = @"
+BOARD GATE - this turn shipped work to a tracked GitHub Projects repo but did not update its board.
+
+Shipped this turn:
+$shipList
+
+Before ending: move/close the matching card with the commit hash (e.g.
+  gh issue close <n> --repo <owner>/<repo> --comment "Fixed in <hash>"
+  gh project item-edit --id <item> --project-id <proj> --field-id <Status> --single-select-option-id <Done>),
+OR create a card for new work, OR state explicitly why no card applies. Then stop.
+If you ALREADY updated the board this turn, say which card and stop.
+"@
+    @{ decision = "block"; reason = $reason } | ConvertTo-Json -Compress -Depth 5 | Write-Output
+} catch { exit 0 }

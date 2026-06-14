@@ -22,7 +22,7 @@ try {
     elseif ($tool -eq 'Bash') {
         $cmd = [string]$payload.tool_input.command
         # Mutation heuristic: only log shell commands that can change state.
-        $mut = 'git\s+(commit|push|add|merge|rebase|reset|tag|revert)|(^|[\s;&|])(rm|mv|cp|mkdir|tee|chmod|chown)\s|>>|(^|[\s;&|])[^|]*>|npm\s+(publish|install)|pip\s+install|deploy|wrangler\s+(deploy|publish)|docker\s+(build|push|run)|gh\s+(release|pr|issue)\s'
+        $mut = 'git\s+(commit|push|add|merge|rebase|reset|tag|revert)|(^|[\s;&|])(rm|mv|cp|mkdir|tee|chmod|chown)\s|>>|(^|[\s;&|])[^|]*>|npm\s+(publish|install)|pip\s+install|deploy|wrangler\s+(deploy|publish)|docker\s+(build|push|run)|gh\s+(release|pr|issue|project)\s'
         if ($cmd -match $mut) { $log = $true; $brief = ($cmd -replace '\s+', ' ').Trim() }
     }
 

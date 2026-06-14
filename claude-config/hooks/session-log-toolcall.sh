@@ -18,7 +18,7 @@ case "$tool" in
         ;;
     Bash)
         cmd=$(echo "$input_json" | jq -r '.tool_input.command // empty' 2>/dev/null)
-        if echo "$cmd" | grep -Eq 'git[[:space:]]+(commit|push|add|merge|rebase|reset|tag|revert)|(^|[[:space:];&|])(rm|mv|cp|mkdir|tee|chmod|chown)[[:space:]]|>>|npm[[:space:]]+(publish|install)|pip[[:space:]]+install|deploy|wrangler[[:space:]]+(deploy|publish)|docker[[:space:]]+(build|push|run)|gh[[:space:]]+(release|pr|issue)[[:space:]]'; then
+        if echo "$cmd" | grep -Eq 'git[[:space:]]+(commit|push|add|merge|rebase|reset|tag|revert)|(^|[[:space:];&|])(rm|mv|cp|mkdir|tee|chmod|chown)[[:space:]]|>>|npm[[:space:]]+(publish|install)|pip[[:space:]]+install|deploy|wrangler[[:space:]]+(deploy|publish)|docker[[:space:]]+(build|push|run)|gh[[:space:]]+(release|pr|issue|project)[[:space:]]'; then
             log=1
             brief=$(echo "$cmd" | tr -s '[:space:]' ' ')
         fi
